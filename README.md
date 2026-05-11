@@ -1,47 +1,61 @@
-STS2 Advisor - 基于反射技术的《杀戮尖塔 2》洗牌预测与战斗增强工具
-✅ 实时监测抽牌堆与弃牌堆状态。
-✅ 高精度模拟游戏底层洗牌算法。
-✅ 多人模式下的本地玩家自动识别。
+# STS2 Advisor
+### 基于反射技术的《杀戮尖塔 2》洗牌预测与战斗增强工具  
+### Reflection-based Shuffle Prediction & Combat Enhancement Tool for Slay the Spire 2
+---
+## 🌟 核心特性 / Key Features
+*   **✅ 实时状态监测 / Real-time Status Monitoring**  
+    实时追踪牌堆状态，确保数据始终同步。  
+    *Monitors draw and discard pile states in real-time to ensure seamless data synchronization.*
+*   **✅ 算法精准模拟 / Precise Algorithm Simulation**  
+    高精度模拟底层的算法（StableShuffle），实现对顺序的无损预测。  
+    *High-fidelity simulation of the game's underlying StableShuffle algorithm for lossless draw order prediction.*
 
-快速上手
-环境要求：.NET 8.0, Godot 4.x
-运行命令：dotnet build
+*   **✅ 多人适配 / Multi-player Compatibility**  
+    通过反射技术自动识别多人模式下的本地ID，确保逻辑执行的准确性。  
+    *Automatically identifies local player IDs in multiplayer mode via reflection, ensuring precise logic execution.*
+---
+## 🚀 快速上手 / Quick Start
+### 环境要求 / Prerequisites
+*   **.NET 8.0 SDK**
+*   **Godot 4.x Runtime**
+### 编译与运行 / Build and Run
+执行以下命令进行项目构建：  
+*Run the following command to build the project:* dotnet build
 
+```mermaid
 sequenceDiagram
-    participant UI as UI/外部调用者
-    participant Core as AdvisorRuntimeCore
-    participant Game as 游戏单例 (CombatManager/RunManager)
-    participant Ref as 反射缓存 (_cachedLocalPlayerIdField)
+    autonumber
+    participant UI as UI / External Caller (外部调用)
+    participant Core as AdvisorRuntimeCore (逻辑核心)
+    participant Game as Game Instance (游戏单例)
+    participant Ref as Reflection Cache (反射缓存)
 
     UI->>Core: TryBuildSnapshot(delta)
     
-    Note over Core: 1. 节流检查 (0.25s)
-    Core->>Game: 获取当前战斗状态 (DebugOnlyGetState)
-    Game-->>Core: 返回 CombatState
+    Note over Core: 1. Throttle Check (0.25s) / 性能节流
+    Core->>Game: Get Battle State (获取状态)
+    Game-->>Core: Return CombatState
 
-    Note over Core: 2. 玩家排序 (探测本地 ID)
-    Core->>Ref: 检查是否已缓存“搜查令”?
-    alt 未缓存
-        Core->>Game: typeof(RewardSynchronizer).GetField("_localPlayerId")
-        Game-->>Ref: 存入 FieldInfo 盒子
+    Note over Core: 2. Player Sorting (Local ID) / 本地用户排序
+    Core->>Ref: Check Cache? / 检查缓存
+    alt No Cache / 未缓存
+        Core->>Game: GetField("_localPlayerId")
+        Game-->>Ref: Store FieldInfo
     end
-    Ref-->>Core: 提供 FieldInfo
-    Core->>Game: GetValue(获取具体的 ulong ID)
-    Game-->>Core: 返回本地玩家 ID
+    Ref-->>Core: Provide FieldInfo
+    Core->>Game: GetValue() -> Return ID
 
-    Note over Core: 3. 循环处理每个玩家数据
-    loop 每个玩家 (Player)
-        Core->>Core: 计算牌堆指纹 (BuildPileSignature)
-        Core->>Core: 比较指纹，确定 Changed 状态
-        
-        opt 存在随机数种子 (RNG)
-            Note over Core: 4. 洗牌预测 (模拟未来)
-            Core->>Core: 克隆影子 RNG (peek)
-            Core->>Core: 执行 StableShuffle (排序 + 随机)
+    loop Each Player / 遍历用户
+        Core->>Core: BuildSignature() / 生成指纹
+        opt Changed / 数据变动
+            Note over Core: 3. Shuffle Prediction / 洗牌预测
+            Core->>Core: Peek Shadow RNG (克隆RNG)
+            Core->>Core: Execute StableShuffle (模拟洗牌)
         end
     end
 
-    Core-->>UI: 输出 PanelSnapshot (包含所有玩家牌堆和预测结果)
+    Core-->>UI: Output Snapshot (输出快照结果)
+```
 
 🛠️ 设计架构与技术
 本项目展示了在受限的单线程环境（Godot）中，如何高效地进行底层数据探测与逻辑模拟。
