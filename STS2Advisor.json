@@ -1,0 +1,12 @@
+{
+  "id": "STS2Advisor",
+  "name": "STS2 Advisor",
+  "author": "gundam11",
+  "description": "战斗顾问mod",
+  "version": "1.0",
+  "has_pck": true,
+  "has_dll": true,
+  "dependencies": [],
+  "affects_gameplay": false
+}
+
