@@ -256,4 +256,3 @@ internal static class GrandOrderMerchantInventoryPatches
         GrandOrderNetSync.UpdateLocalSnapshot(snapshot, broadcast: true);
     }
 }
-

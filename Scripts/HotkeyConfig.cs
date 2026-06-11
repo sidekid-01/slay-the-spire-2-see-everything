@@ -46,12 +46,27 @@ internal static class HotkeyConfig
 
     private static string GetConfigPath()
     {
+        // Prefer writable file next to the installed mod for easy user edits.
+        string? gameDir = Path.GetDirectoryName(OS.GetExecutablePath());
+        if (!string.IsNullOrWhiteSpace(gameDir))
+        {
+            string modsPath = Path.Combine(gameDir, "mods", "STS2Advisor", FileName);
+            return modsPath;
+        }
+
+        // Fallback to user:// when executable path is unavailable.
         string dir = OS.GetUserDataDir();
         if (string.IsNullOrWhiteSpace(dir))
             dir = Path.GetTempPath();
+        return Path.Combine(dir, "mods", "sts-2-advisor", FileName);
+    }
 
-        dir = Path.Combine(dir, "mods", "sts-2-advisor");
-        return Path.Combine(dir, FileName);
+    private static string GetLegacyUserConfigPath()
+    {
+        string dir = OS.GetUserDataDir();
+        if (string.IsNullOrWhiteSpace(dir))
+            dir = Path.GetTempPath();
+        return Path.Combine(dir, "mods", "sts-2-advisor", FileName);
     }
 
     private static HotkeyConfigData LoadOrCreate()
@@ -59,6 +74,17 @@ internal static class HotkeyConfig
         string path = GetConfigPath();
         try
         {
+            // One-time migration from legacy user:// path into mod folder.
+            if (!File.Exists(path))
+            {
+                string legacyPath = GetLegacyUserConfigPath();
+                if (File.Exists(legacyPath))
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                    File.Copy(legacyPath, path, overwrite: true);
+                }
+            }
+
             if (!File.Exists(path))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(path)!);
@@ -123,24 +149,11 @@ internal static class HotkeyConfig
     private static Key ParseKey(string token, Key fallback)
     {
         if (string.IsNullOrWhiteSpace(token)) return fallback;
-        token = token.Trim().ToUpperInvariant();
+        token = token.Trim();
 
-        return token switch
-        {
-            "F1" => Key.F1,
-            "F2" => Key.F2,
-            "F3" => Key.F3,
-            "F4" => Key.F4,
-            "F5" => Key.F5,
-            "F6" => Key.F6,
-            "F7" => Key.F7,
-            "F8" => Key.F8,
-            "F9" => Key.F9,
-            "F10" => Key.F10,
-            "F11" => Key.F11,
-            "F12" => Key.F12,
-            _ => fallback,
-        };
+        if (Enum.TryParse<Key>(token, ignoreCase: true, out var parsed))
+            return parsed;
+
+        return fallback;
     }
 }
-

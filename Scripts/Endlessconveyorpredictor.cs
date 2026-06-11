@@ -59,6 +59,12 @@ public static class TransformPredictor
         // 排除原卡自身
         source = source.Where(c => c.Id != original.Id);
 
+        // 与 CardFactory.FilterForPlayerCount 一致
+        if (original.Owner.RunState.Players.Count > 1)
+            source = source.Where(c => c.MultiplayerConstraint != CardMultiplayerConstraint.SingleplayerOnly);
+        else
+            source = source.Where(c => c.MultiplayerConstraint != CardMultiplayerConstraint.MultiplayerOnly);
+
         return source.ToArray();
     }
 
@@ -131,7 +137,22 @@ public class EndlessConveyorPredictor : IEventPredictor
             // 与游戏调用 CardCmd.TransformToRandom(card, base.Rng) 时一致。
             // 下一次 NextInt 就是 CardFactory 里 rng.NextItem(filteredPool)。
             if (dish.Id == "JELLY_LIVER")
-                results.AddRange(PredictJellyLiver(player, mirrorRng));
+            {
+                bool deterministicCanContinue;
+                int remainingPulls = Math.Max(0, PredictSteps - i);
+                results.AddRange(PredictJellyLiver(
+                    player, mirrorRng, numGrabs, hasHeal, hasPot, remainingPulls, out deterministicCanContinue));
+                if (!deterministicCanContinue)
+                {
+                    results.Add(new EventPrediction(
+                        STS2AdvisorI18n.Pick("  └ Next pulls", "  └ 后续抓取"),
+                        STS2AdvisorI18n.Pick(
+                            "Depends on selected transform target pool; deterministic prediction stops here.",
+                            "后续结果取决于选择的变形目标卡池；确定性预测在此停止。"),
+                        PredictionTag.Warning));
+                    break;
+                }
+            }
         }
 
         return results;
@@ -140,8 +161,15 @@ public class EndlessConveyorPredictor : IEventPredictor
     // ── JellyLiver 变形预测 ──────────────────────────────────
 
     private static List<EventPrediction> PredictJellyLiver(
-        MegaCrit.Sts2.Core.Entities.Players.Player player, Rng mirrorRng)
+        MegaCrit.Sts2.Core.Entities.Players.Player player,
+        Rng mirrorRng,
+        int currentNumGrabs,
+        bool hasHeal,
+        bool hasPot,
+        int remainingPulls,
+        out bool deterministicCanContinue)
     {
+        deterministicCanContinue = true;
         var transformable = player.Deck.Cards
             .Where(c => c.IsTransformable)
             .ToList();
@@ -199,7 +227,9 @@ public class EndlessConveyorPredictor : IEventPredictor
         }
         else
         {
-            // 多池：每个池用相同 Counter 位置独立 peek，结果各自正确
+            // 多池：每个池用相同 Counter 位置独立 peek，结果各自正确。
+            // 但玩家选择会导致后续 RNG 分支，无法继续单一路径预测。
+            deterministicCanContinue = false;
             var rows = new List<EventPrediction>
             {
                 new(
@@ -217,6 +247,8 @@ public class EndlessConveyorPredictor : IEventPredictor
                 var peekRng = new Rng(seed, currentCounter);
                 int index   = peekRng.NextInt(0, pool.Length);
                 string result = LocText.Of(pool[index]);
+                string futurePulls = SimulateFuturePullsAfterJellyChoice(
+                    seed, currentCounter, pool.Length, currentNumGrabs, hasHeal, hasPot, remainingPulls);
 
                 string poolName = group.Key == "colorless"
                     ? STS2AdvisorI18n.Pick("    Pick Colorless/Special", "    选无色/特殊牌")
@@ -224,14 +256,49 @@ public class EndlessConveyorPredictor : IEventPredictor
                         $"    Pick {group.Key.Replace("_CARD_POOL", "").Replace("_", " ")} card",
                         $"    选{group.Key.Replace("_CARD_POOL", "").Replace("_", "")}角色牌");
 
-                rows.Add(new(poolName, result, PredictionTag.Warning));
+                rows.Add(new(
+                    poolName,
+                    STS2AdvisorI18n.Pick(
+                        $"{result}  |  Future pulls: {futurePulls}",
+                        $"{result}  ｜  后续抓取：{futurePulls}"),
+                    PredictionTag.Warning));
             }
-
-            // mirrorRng 推进一次保持后续 Counter 同步
-            mirrorRng.NextInt(0, 2);
 
             return rows;
         }
+    }
+
+    private static string SimulateFuturePullsAfterJellyChoice(
+        uint seed,
+        int currentCounter,
+        int transformPoolLength,
+        int currentNumGrabs,
+        bool hasHeal,
+        bool hasPot,
+        int remainingPulls)
+    {
+        if (transformPoolLength <= 0)
+            return STS2AdvisorI18n.Pick("N/A", "无");
+
+        var branchRng = new Rng(seed, currentCounter);
+        branchRng.NextInt(0, transformPoolLength);
+        string branchLastDish = "JELLY_LIVER";
+
+        if (remainingPulls <= 0)
+            return STS2AdvisorI18n.Pick("No remaining pulls in preview window.", "当前预览窗口内无剩余抓取。");
+
+        var texts = new List<string>();
+        for (int step = 1; step <= remainingPulls; step++)
+        {
+            var dish = RollDish(
+                branchRng,
+                currentNumGrabs + step,
+                ref branchLastDish,
+                hasHeal,
+                hasPot);
+            texts.Add(FormatDish(dish));
+        }
+        return string.Join(" -> ", texts);
     }
 
     // ── RollDish 模拟 ────────────────────────────────────────

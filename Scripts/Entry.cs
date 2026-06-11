@@ -13,6 +13,7 @@ public static class Entry
     public static AdvisorPanel? Panel { get; private set; }
     public static EventAdvisorPanel? EventPanel { get; private set; }
     public static GrandOrderPanel? GrandOrder { get; private set; }
+    public static SignatureBadgeOverlay? SignatureBadge { get; private set; }
 
     public static void Init()
     {
@@ -44,17 +45,23 @@ public static class Entry
                 (Variant)(GodotObject)EventPanel
             );
 
-            GrandOrder = new GrandOrderPanel();
-            ((GodotObject)game).CallDeferred(
-                Node.MethodName.AddChild,
-                (Variant)(GodotObject)GrandOrder
-            );
+            // GrandOrder = new GrandOrderPanel();
+            // ((GodotObject)game).CallDeferred(
+            //     Node.MethodName.AddChild,
+            //     (Variant)(GodotObject)GrandOrder
+            // );
 
             var mapPanel = new Sha_Nagba_Imuru();
             ((GodotObject)game).CallDeferred(
                 Node.MethodName.AddChild,
                 (Variant)(GodotObject)mapPanel
         
+            );
+
+            SignatureBadge = new SignatureBadgeOverlay();
+            ((GodotObject)game).CallDeferred(
+                Node.MethodName.AddChild,
+                (Variant)(GodotObject)SignatureBadge
             );
         }
         else

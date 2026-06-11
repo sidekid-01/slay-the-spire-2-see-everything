@@ -10,7 +10,6 @@ internal static class TransformEventCatalog
     // TypeName, EN, ZH, transformCount
     private static readonly (string TypeName, string En, string Zh, int Count)[] KnownTransformEvents =
     {
-        ("Symbiote", "Symbiote", "共生体", 1),
         ("AromaOfChaos", "Aroma of Chaos", "混沌之香", 1),
         ("WhisperingHollow", "Whispering Hollow", "低语空洞", 1),
         ("MorphicGrove", "Morphic Grove", "拟态林地", 2),

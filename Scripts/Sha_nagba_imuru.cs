@@ -39,7 +39,7 @@ public partial class Sha_Nagba_Imuru : CanvasLayer
 
     // ── 颜色 ─────────────────────────────────────────────────
     private static readonly Color ColBg      = new(0.04f, 0.05f, 0.09f, 0.93f);
-    private static readonly Color ColBorder  = new(1f, 1f, 1f, 0.08f);
+    private static readonly Color ColBorder  = new(0.92f, 0.63f, 0.16f, 0.34f);
     private static readonly Color ColTitle   = new(1.0f, 0.92f, 0.55f, 1f);
     private static readonly Color ColDim     = new(0.45f, 0.45f, 0.50f, 1f);
     private static readonly Color ColCurrent = new(0.25f, 1.0f, 0.45f, 1f);
@@ -142,7 +142,20 @@ public partial class Sha_Nagba_Imuru : CanvasLayer
                 AddLine($"  {rt}: {pct:F0}%", ColUnknown, 10);
         }
 
-        // ── 地图节点预测 ────────────────────────────────────
+        // ── 完整队列 ────────────────────────────────────────
+        AddSectionHeader(STS2AdvisorI18n.Pick("━━ Full Event Queue ━━", "━━ 完整事件队列 ━━"));
+        AddQueueList(rooms.events.Select(LocText.Of).ToList(),
+            rooms.eventsVisited, ColNext);
+
+        AddSectionHeader(STS2AdvisorI18n.Pick("━━ Full Normal Fight Queue ━━", "━━ 完整普通战队列 ━━"));
+        AddQueueList(rooms.normalEncounters.Select(LocText.Of).ToList(),
+            rooms.normalEncountersVisited, new Color(0.95f, 0.45f, 0.45f));
+
+        AddSectionHeader(STS2AdvisorI18n.Pick("━━ Full Elite Fight Queue ━━", "━━ 完整精英战队列 ━━"));
+        AddQueueList(rooms.eliteEncounters.Select(LocText.Of).ToList(),
+            rooms.eliteEncountersVisited, new Color(1.0f, 0.25f, 0.25f));
+
+        // ── 地图节点预测（放到所有队列后面）──────────────────
         AddSectionHeader(STS2AdvisorI18n.Pick("━━ Map Node Prediction ━━", "━━ 地图节点预测 ━━"));
 
         var currentCoord  = state.CurrentMapCoord;
@@ -195,19 +208,6 @@ public partial class Sha_Nagba_Imuru : CanvasLayer
         AddPointRowHorizontal(
             new[] { actMap.StartingMapPoint },
             currentCoord, visitedCoords, rooms, ref sim);
-
-        // ── 完整队列 ────────────────────────────────────────
-        AddSectionHeader(STS2AdvisorI18n.Pick("━━ Full Event Queue ━━", "━━ 完整事件队列 ━━"));
-        AddQueueList(rooms.events.Select(LocText.Of).ToList(),
-            rooms.eventsVisited, ColNext);
-
-        AddSectionHeader(STS2AdvisorI18n.Pick("━━ Full Normal Fight Queue ━━", "━━ 完整普通战队列 ━━"));
-        AddQueueList(rooms.normalEncounters.Select(LocText.Of).ToList(),
-            rooms.normalEncountersVisited, new Color(0.95f, 0.45f, 0.45f));
-
-        AddSectionHeader(STS2AdvisorI18n.Pick("━━ Full Elite Fight Queue ━━", "━━ 完整精英战队列 ━━"));
-        AddQueueList(rooms.eliteEncounters.Select(LocText.Of).ToList(),
-            rooms.eliteEncountersVisited, new Color(1.0f, 0.25f, 0.25f));
     }
 
     // ── 行标题（醒目分隔）────────────────────────────────────
@@ -223,6 +223,7 @@ public partial class Sha_Nagba_Imuru : CanvasLayer
 
         var card = new PanelContainer();
         card.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        card.CustomMinimumSize = new Vector2((int)(118 * _scale), 0);
         var headerStyle = new StyleBoxFlat();
         headerStyle.BgColor = bgColor;
         headerStyle.SetCornerRadiusAll(4);
@@ -230,7 +231,7 @@ public partial class Sha_Nagba_Imuru : CanvasLayer
         headerStyle.ContentMarginRight = 10;
         headerStyle.ContentMarginTop = 5;
         headerStyle.ContentMarginBottom = 5;
-        headerStyle.BorderColor = new Color(1f, 1f, 1f, 0.15f);
+        headerStyle.BorderColor = ColBorder;
         headerStyle.SetBorderWidthAll(1);
         card.AddThemeStyleboxOverride("panel", headerStyle);
 
@@ -671,7 +672,7 @@ public partial class Sha_Nagba_Imuru : CanvasLayer
     {
         _root = new PanelContainer();
         _root.Position = new Vector2(10, 60);
-        _root.CustomMinimumSize = new Vector2((int)(460 * _scale), 0);
+        _root.CustomMinimumSize = new Vector2((int)(620 * _scale), 0);
         _root.AddThemeStyleboxOverride("panel", MakeRootStyle());
         AddChild(_root);
 
@@ -733,7 +734,7 @@ public partial class Sha_Nagba_Imuru : CanvasLayer
         outer.AddChild(statusPad);
 
         _scroll = new ScrollContainer();
-        _scroll.CustomMinimumSize    = new Vector2((int)(460 * _scale), (int)(680 * _scale));
+        _scroll.CustomMinimumSize    = new Vector2((int)(620 * _scale), (int)(680 * _scale));
         _scroll.HorizontalScrollMode = ScrollContainer.ScrollMode.ShowNever;
         outer.AddChild(_scroll);
 
@@ -813,7 +814,7 @@ public partial class Sha_Nagba_Imuru : CanvasLayer
         var s = new StyleBoxFlat();
         s.BgColor = ColBg; s.SetCornerRadiusAll(10);
         s.BorderColor = ColBorder; s.SetBorderWidthAll(1);
-        s.ShadowColor = new Color(0, 0, 0, 0.5f);
+        s.ShadowColor = new Color(0.62f, 0.05f, 0.06f, 0.30f);
         s.ShadowSize = 12; s.ShadowOffset = new Vector2(0, 3);
         return s;
     }
@@ -821,7 +822,7 @@ public partial class Sha_Nagba_Imuru : CanvasLayer
     private static StyleBoxFlat MakeHeaderStyle()
     {
         var s = new StyleBoxFlat();
-        s.BgColor = new Color(1, 1, 1, 0.04f);
+        s.BgColor = new Color(0.20f, 0.10f, 0.08f, 0.50f);
         s.CornerRadiusTopLeft = s.CornerRadiusTopRight = 10;
         s.ContentMarginLeft = 12; s.ContentMarginRight = 6;
         s.ContentMarginTop = s.ContentMarginBottom = 8;
@@ -831,7 +832,7 @@ public partial class Sha_Nagba_Imuru : CanvasLayer
     private static StyleBoxFlat MakeSepStyle()
     {
         var s = new StyleBoxFlat();
-        s.BgColor = new Color(1, 1, 1, 0.07f);
+        s.BgColor = new Color(0.92f, 0.63f, 0.16f, 0.14f);
         return s;
     }
 
@@ -841,7 +842,7 @@ public partial class Sha_Nagba_Imuru : CanvasLayer
         s.BgColor = bg; s.SetCornerRadiusAll(4);
         s.ContentMarginLeft = s.ContentMarginRight = 7;
         s.ContentMarginTop = s.ContentMarginBottom = 3;
-        s.BorderColor = new Color(1, 1, 1, 0.05f);
+        s.BorderColor = new Color(0.92f, 0.63f, 0.16f, 0.22f);
         s.SetBorderWidthAll(1);
         return s;
     }

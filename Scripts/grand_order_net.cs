@@ -33,6 +33,8 @@ internal sealed class GrandOrderSnapshotMessage : INetMessage, IPacketSerializab
 
     public bool ShouldBroadcast => true;
 
+    public bool ShouldBuffer => false;
+
     public NetTransferMode Mode => (NetTransferMode)2;
 
     public LogLevel LogLevel => (LogLevel)0;
@@ -138,4 +140,3 @@ internal static class GrandOrderNetSync
         _netService.SendMessage(GrandOrderSnapshotMessage.CreateClear());
     }
 }
-
